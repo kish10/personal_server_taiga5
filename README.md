@@ -2,7 +2,7 @@ Fork of https://github.com/docker-taiga/taiga/
 
 ----
 
-From original README
+From original README:
 
 # Taiga docker setup
 
