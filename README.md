@@ -2,6 +2,12 @@ Fork of https://github.com/docker-taiga/taiga/
 
 ----
 
+Personal server intergration next steps:
+- Figure out why environmental varaibles from variables.env aren't being populated into the config files
+- Resolve websocket security error (request being generated for `ws` instead of `wss`)
+
+----
+
 From original README:
 
 # Taiga docker setup
