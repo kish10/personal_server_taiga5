@@ -1,0 +1,141 @@
+# version: '3'
+
+services:
+  taiga-back:
+    image: dockertaiga/back:5.5.5
+    container_name: taiga-back
+    restart: unless-stopped
+    depends_on:
+      - taiga-db
+      - taiga-events
+    networks:
+      - taiga-default
+    volumes:
+      - ./data/media:/taiga-media
+      # - ./conf/back:/taiga-conf
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-front:
+    image: dockertaiga/front:5.5.5
+    container_name: taiga-front
+    restart: unless-stopped
+    networks:
+      - taiga-default
+    volumes:
+      - taiga-front-etc:/etc/
+      - taiga-front-srv:/srv/taiga
+      # - ./conf/front:/taiga-conf
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-front-inspector:
+    container_name: taiga-front-inspector
+    image: alpine
+    volumes_from:
+      - taiga-front:rw
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    restart: always
+
+  taiga-db:
+    image: postgres:11-alpine
+    container_name: taiga-db
+    restart: unless-stopped
+    networks:
+      - taiga-default
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+    volumes:
+      - $APPLICATION_ROOT/taiga5/data/db:/var/lib/postgresql/data
+
+  taiga-rabbit:
+    image: dockertaiga/rabbit
+    container_name: taiga-rabbit
+    restart: unless-stopped
+    networks:
+      - taiga-default
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-redis:
+    image: bitnami/redis:5.0
+    container_name: taiga-redis
+    restart: unless-stopped
+    networks:
+      - taiga-default
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-events:
+    image: dockertaiga/events
+    container_name: taiga-events
+    restart: unless-stopped
+    depends_on:
+      - taiga-rabbit
+    networks:
+      - taiga-default
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-proxy:
+    image: dockertaiga/proxy
+    # server intergration:
+    # - expose port 80
+    # - add "application" label 
+    # - specify domain information
+    expose: 
+      - '443'
+    labels:
+      webserver-component: "application"
+    environment:
+      - DOMAINS=taiga.patel.blue
+      - BASE_DOMAIN=taiga.patel.blue
+      # - EVENTS_HOST=taiga-events
+    container_name: taiga-proxy
+    restart: unless-stopped
+    depends_on:
+      - taiga-back
+      - taiga-front
+      - taiga-events
+    networks:
+      - taiga-default
+      - server # connect server network
+    # ports:
+    #   - 80:80
+      # - 443:443
+    environment:
+      - CERT_NAME=live/hello.patel.blue/fullchain.cer
+      - CERT_KEY=live/taiga.patel.blue/taiga.patel.blue.key
+    volumes:
+      #- ./cert:/taiga-cert
+      - certbot-etc:/taiga-cert
+      - taiga-etc-nginx:/etc/nginx
+      # - taiga-proxy-confd:/taiga-conf
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+  taiga-proxy-inspector:
+    container_name: taiga-proxy-inspector
+    image: alpine
+    volumes_from:
+      - taiga-proxy:rw
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    restart: always
+    env_file:
+      - $APPLICATION_ROOT/taiga5/variables.env
+
+networks:
+  taiga-default:
+
+volumes:
+  taiga-etc-nginx:
+  taiga-front-etc:
+  taiga-front-srv:
+  taiga-proxy-confd:
+      # driver: local
+      # driver_opts:
+      #   type: none
+      #   device: $APPLICATION_ROOT/taiga5/conf/proxy
+      #   o: bind
