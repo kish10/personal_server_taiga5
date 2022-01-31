@@ -11,7 +11,7 @@ services:
     networks:
       - taiga-default
     volumes:
-      - ./data/media:/taiga-media
+      - $APPLICATION_ROOT/taiga5/data/media:/taiga-media
       # - ./conf/back:/taiga-conf
     env_file:
       - $APPLICATION_ROOT/taiga5/variables.env
@@ -28,6 +28,8 @@ services:
       # - ./conf/front:/taiga-conf
     env_file:
       - $APPLICATION_ROOT/taiga5/variables.env
+    enviroment:
+      TAIGA_WEBSOCKETS_URL=wss
 
   taiga-front-inspector:
     container_name: taiga-front-inspector
@@ -87,11 +89,14 @@ services:
     expose: 
       - '443'
     labels:
-      webserver-component: "application"
+      webserver-component: "application"   
     environment:
       - DOMAINS=taiga.patel.blue
       - BASE_DOMAIN=taiga.patel.blue
+      - SERVICE_PORT=80
       # - EVENTS_HOST=taiga-events
+      # - CERT_NAME=live/taiga.patel.blue/fullchain.cer
+      # - CERT_KEY=live/taiga.patel.blue/taiga.patel.blue.key   
     container_name: taiga-proxy
     restart: unless-stopped
     depends_on:
@@ -104,9 +109,6 @@ services:
     # ports:
     #   - 80:80
       # - 443:443
-    environment:
-      - CERT_NAME=live/hello.patel.blue/fullchain.cer
-      - CERT_KEY=live/taiga.patel.blue/taiga.patel.blue.key
     volumes:
       #- ./cert:/taiga-cert
       - certbot-etc:/taiga-cert
